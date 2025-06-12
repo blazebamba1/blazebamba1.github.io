@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Potion Shop Adventure</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div id="door-container">
+        <div id="door">
+            Knock to Enter
+        </div>
+        <p>Press the door to begin your adventure!</p>
+    </div>
+
+    <div id="shop-container">
+        <p id="elf-dialogue">Hello adventurer, what is your name?</p>
+        <input type="text" id="username-input" placeholder="Enter your name">
+        <button id="enter-shop-btn">Enter Shop</button>
+
+        <div id="difficulty-selection" style="display: none;">
+            <p id="elf-welcome-message"></p>
+            <p>Choose your challenge:</p>
+            <div class="difficulty-shelf">
+                </div>
+            <p id="selected-difficulty-message" style="margin-top: 15px; font-weight: bold;"></p>
+            <button id="choose-difficulty-btn" disabled>Proceed to Potions</button>
+        </div>
+
+        <div id="potion-selection" style="display: none;">
+            <p>I have many potions there are:</p>
+            <div class="potion-shelf">
+                </div>
+            <p id="selected-potion-message" style="margin-top: 15px; font-weight: bold;"></p>
+            <button id="choose-potion-btn" disabled>Choose Potion</button>
+            <p id="inventory-note" style="margin-top: 15px;"></p>
+            <p id="farewell-message" style="margin-top: 15px; font-style: italic;"></p>
+        </div>
+    </div>
+
+    <div id="game-area">
+        <canvas id="game-canvas" width="600" height="400"></canvas>
+        <div id="game-messages"></div>
+        <div id="boss-name-and-phase"></div>
+        <div id="boss-health-bar-container">
+            <div id="boss-health-bar"></div>
+        </div>
+    </div>
+
+    <audio id="knock-sound" src="path/to/your/knock_sound.mp3" preload="auto"></audio>
+    <audio id="scream-sound" src="path/to/your/scream_sound.mp3" preload="auto"></audio>
+    <audio id="player-shoot-sound" src="path/to/your/player_shoot.mp3" preload="auto"></audio>
+    <audio id="alien-hit-sound" src="path/to/your/alien_hit.mp3" preload="auto"></audio>
+    <audio id="boss-hit-sound" src="path/to/your/boss_hit.mp3" preload="auto"></audio>
+    <audio id="player-hit-sound" src="path/to/your/player_hit.mp3" preload="auto"></audio>
+    <audio id="potion-select-sound" src="path/to/your/potion_select.mp3" preload="auto"></audio>
+    <audio id="button-click-sound" src="path/to/your/button_click.mp3" preload="auto"></audio>
+    <audio id="boss-spawn-sound" src="path/to/your/boss_spawn.mp3" preload="auto"></audio>
+    <audio id="phase-change-sound" src="path/to/your/phase_change.mp3" preload="auto"></audio>
+    <audio id="teleport-sound" src="path/to/your/teleport.mp3" preload="auto"></audio>
+    <audio id="alien-shoot-sound" src="path/to/your/alien_shoot.mp3" preload="auto"></audio>
+    <script src="script.js"></script>
+</body>
+</html>

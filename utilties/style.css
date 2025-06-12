@@ -1,0 +1,157 @@
+body {
+    font-family: 'Courier New', monospace; /* Classic monospace font for ASCII */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: #FFFFFF; /* Changed to WHITE */
+    margin: 0;
+    overflow: hidden;
+    color: #222; /* Darker text for readability on white background */
+}
+#door-container {
+    text-align: center;
+    transition: opacity 1s ease-in-out;
+    position: absolute;
+}
+#door {
+    width: 200px;
+    height: 300px;
+    background-color: #5A2D0C; /* Darker brown */
+    border: 5px solid #3A1E08;
+    border-radius: 5px;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 2em;
+    color: white;
+    font-weight: bold;
+    margin-bottom: 20px;
+    box-shadow: 5px 5px 15px rgba(0,0,0,0.5);
+    transition: transform 0.3s ease;
+}
+#door:hover {
+    transform: scale(1.05);
+}
+#shop-container {
+    display: none;
+    text-align: center;
+    background-color: #eee; /* Light shop background on white */
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.2);
+    max-width: 600px;
+    width: 90%;
+    opacity: 0;
+    transition: opacity 1s ease-in-out;
+    color: #222; /* Dark text for shop */
+}
+#shop-container.visible, #game-area.visible {
+    opacity: 1;
+}
+.potion-shelf, .difficulty-shelf {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 15px;
+    margin-top: 20px;
+}
+.potion-item, .difficulty-item {
+    border: 1px solid #777; /* Lighter border */
+    padding: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 80px; /* Slightly smaller for difficulty */
+    color: #222; /* Dark text */
+}
+.potion-item:hover, .difficulty-item:hover {
+    background-color: #ddd; /* Lighter hover */
+}
+.potion-item.selected, .difficulty-item.selected {
+    background-color: #a2d7b5; /* Lighter green for selected */
+    border-color: #28a745;
+    font-weight: bold;
+}
+button {
+    padding: 10px 20px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1em;
+    margin-top: 20px;
+}
+button:hover {
+    background-color: #45a049;
+}
+#elf-dialogue {
+    margin-bottom: 20px;
+    font-size: 1.1em;
+    font-style: italic;
+}
+#username-input {
+    padding: 8px;
+    width: 80%;
+    max-width: 300px;
+    margin-bottom: 15px;
+    border: 1px solid #777;
+    border-radius: 4px;
+    background-color: #f0f0f0; /* Lighter input background */
+    color: #222;
+}
+
+/* Game Area Styles */
+#game-area {
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background-color: #000; /* Game background is still black for contrast */
+    border: 2px solid #222;
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    padding: 20px;
+    opacity: 0;
+    transition: opacity 1s ease-in-out;
+}
+#game-canvas {
+    background-color: #000; /* Canvas background remains black */
+    border: 1px solid #555;
+}
+#game-messages {
+    color: #0f0; /* Green for game messages */
+    font-size: 2em;
+    margin-top: 10px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+}
+/* Style for boss health bar */
+#boss-health-bar-container {
+    width: 80%;
+    max-width: 400px;
+    height: 20px;
+    background-color: #555;
+    border: 1px solid #eee;
+    border-radius: 5px;
+    margin-top: 10px;
+    overflow: hidden;
+    display: none;
+}
+#boss-health-bar {
+    height: 100%;
+    background-color: #dc3545;
+    width: 100%;
+    transition: width 0.2s ease-out;
+}
+#boss-name-and-phase {
+    color: #0f0; /* Green for boss info */
+    font-size: 1.2em;
+    margin-top: 5px;
+    display: none;
+}

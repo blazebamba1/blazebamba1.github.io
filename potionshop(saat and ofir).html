@@ -1,0 +1,2142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Potion Shop Adventure</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace; /* Classic monospace font for ASCII */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #FFFFFF; /* Changed to WHITE */
+            margin: 0;
+            overflow: hidden;
+            color: #222; /* Darker text for readability on white background */
+        }
+        #door-container {
+            text-align: center;
+            transition: opacity 1s ease-in-out;
+            position: absolute;
+        }
+        #door {
+            width: 200px;
+            height: 300px;
+            background-color: #5A2D0C; /* Darker brown */
+            border: 5px solid #3A1E08;
+            border-radius: 5px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2em;
+            color: white;
+            font-weight: bold;
+            margin-bottom: 20px;
+            box-shadow: 5px 5px 15px rgba(0,0,0,0.5);
+            transition: transform 0.3s ease;
+        }
+        #door:hover {
+            transform: scale(1.05);
+        }
+        #shop-container {
+            display: none;
+            text-align: center;
+            background-color: #eee; /* Light shop background on white */
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.2);
+            max-width: 600px;
+            width: 90%;
+            opacity: 0;
+            transition: opacity 1s ease-in-out;
+            color: #222; /* Dark text for shop */
+        }
+        #shop-container.visible, #game-area.visible {
+            opacity: 1;
+        }
+        .potion-shelf, .difficulty-shelf {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .potion-item, .difficulty-item {
+            border: 1px solid #777; /* Lighter border */
+            padding: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 80px; /* Slightly smaller for difficulty */
+            color: #222; /* Dark text */
+        }
+        .potion-item:hover, .difficulty-item:hover {
+            background-color: #ddd; /* Lighter hover */
+        }
+        .potion-item.selected, .difficulty-item.selected {
+            background-color: #a2d7b5; /* Lighter green for selected */
+            border-color: #28a745;
+            font-weight: bold;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            margin-top: 20px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #elf-dialogue {
+            margin-bottom: 20px;
+            font-size: 1.1em;
+            font-style: italic;
+        }
+        #username-input {
+            padding: 8px;
+            width: 80%;
+            max-width: 300px;
+            margin-bottom: 15px;
+            border: 1px solid #777;
+            border-radius: 4px;
+            background-color: #f0f0f0; /* Lighter input background */
+            color: #222;
+        }
+
+        /* Game Area Styles */
+        #game-area {
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: #000; /* Game background is still black for contrast */
+            border: 2px solid #222;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            padding: 20px;
+            opacity: 0;
+            transition: opacity 1s ease-in-out;
+        }
+        #game-canvas {
+            background-color: #000; /* Canvas background remains black */
+            border: 1px solid #555;
+        }
+        #game-messages {
+            color: #0f0; /* Green for game messages */
+            font-size: 2em;
+            margin-top: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+        }
+        /* Style for boss health bar */
+        #boss-health-bar-container {
+            width: 80%;
+            max-width: 400px;
+            height: 20px;
+            background-color: #555;
+            border: 1px solid #eee;
+            border-radius: 5px;
+            margin-top: 10px;
+            overflow: hidden;
+            display: none;
+        }
+        #boss-health-bar {
+            height: 100%;
+            background-color: #dc3545;
+            width: 100%;
+            transition: width 0.2s ease-out;
+        }
+        #boss-name-and-phase {
+            color: #0f0; /* Green for boss info */
+            font-size: 1.2em;
+            margin-top: 5px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="door-container">
+        <div id="door">
+            Knock to Enter
+        </div>
+        <p>Press the door to begin your adventure!</p>
+    </div>
+
+    <div id="shop-container">
+        <p id="elf-dialogue">Hello adventurer, what is your name?</p>
+        <input type="text" id="username-input" placeholder="Enter your name">
+        <button id="enter-shop-btn">Enter Shop</button>
+
+        <div id="difficulty-selection" style="display: none;">
+            <p id="elf-welcome-message"></p>
+            <p>Choose your challenge:</p>
+            <div class="difficulty-shelf">
+                </div>
+            <p id="selected-difficulty-message" style="margin-top: 15px; font-weight: bold;"></p>
+            <button id="choose-difficulty-btn" disabled>Proceed to Potions</button>
+        </div>
+
+        <div id="potion-selection" style="display: none;">
+            <p>I have many potions there are:</p>
+            <div class="potion-shelf">
+                </div>
+            <p id="selected-potion-message" style="margin-top: 15px; font-weight: bold;"></p>
+            <button id="choose-potion-btn" disabled>Choose Potion</button>
+            <p id="inventory-note" style="margin-top: 15px;"></p>
+            <p id="farewell-message" style="margin-top: 15px; font-style: italic;"></p>
+        </div>
+    </div>
+
+    <div id="game-area">
+        <canvas id="game-canvas" width="600" height="400"></canvas>
+        <div id="game-messages"></div>
+        <div id="boss-name-and-phase"></div>
+        <div id="boss-health-bar-container">
+            <div id="boss-health-bar"></div>
+        </div>
+    </div>
+
+    <audio id="knock-sound" src="path/to/your/knock_sound.mp3" preload="auto"></audio>
+    <audio id="scream-sound" src="path/to/your/scream_sound.mp3" preload="auto"></audio>
+    <audio id="player-shoot-sound" src="path/to/your/player_shoot.mp3" preload="auto"></audio>
+    <audio id="alien-hit-sound" src="path/to/your/alien_hit.mp3" preload="auto"></audio>
+    <audio id="boss-hit-sound" src="path/to/your/boss_hit.mp3" preload="auto"></audio>
+    <audio id="player-hit-sound" src="path/to/your/player_hit.mp3" preload="auto"></audio>
+    <audio id="potion-select-sound" src="path/to/your/potion_select.mp3" preload="auto"></audio>
+    <audio id="button-click-sound" src="path/to/your/button_click.mp3" preload="auto"></audio>
+    <audio id="boss-spawn-sound" src="path/to/your/boss_spawn.mp3" preload="auto"></audio>
+    <audio id="phase-change-sound" src="path/to/your/phase_change.mp3" preload="auto"></audio>
+    <audio id="teleport-sound" src="path/to/your/teleport.mp3" preload="auto"></audio>
+    <audio id="alien-shoot-sound" src="path/to/your/alien_shoot.mp3" preload="auto"></audio>
+</body>
+    <script>
+        // --- DOM Elements ---
+        const door = document.getElementById('door');
+        const doorContainer = document.getElementById('door-container');
+        const shopContainer = document.getElementById('shop-container');
+        const elfDialogue = document.getElementById('elf-dialogue');
+        const usernameInput = document.getElementById('username-input');
+        const enterShopBtn = document.getElementById('enter-shop-btn');
+        const difficultySelection = document.getElementById('difficulty-selection');
+        const difficultyShelf = document.querySelector('.difficulty-shelf');
+        const selectedDifficultyMessage = document.getElementById('selected-difficulty-message');
+        const chooseDifficultyBtn = document.getElementById('choose-difficulty-btn');
+        const potionSelection = document.getElementById('potion-selection');
+        const elfWelcomeMessage = document.getElementById('elf-welcome-message');
+        const potionShelf = document.querySelector('.potion-shelf');
+        const selectedPotionMessage = document.getElementById('selected-potion-message');
+        const choosePotionBtn = document.getElementById('choose-potion-btn');
+        const inventoryNote = document.getElementById('inventory-note');
+        const farewellMessage = document.getElementById('farewell-message');
+
+        // --- Game Elements ---
+        const gameArea = document.getElementById('game-area');
+        const gameCanvas = document.getElementById('game-canvas');
+        const ctx = gameCanvas.getContext('2d');
+        const gameMessages = document.getElementById('game-messages');
+        const bossHealthBarContainer = document.getElementById('boss-health-bar-container');
+        const bossHealthBar = document.getElementById('boss-health-bar');
+        const bossNameAndPhaseDisplay = document.getElementById('boss-name-and-phase');
+
+        // --- Audio Elements (Sound Effects ONLY) ---
+        const knockSound = document.getElementById('knock-sound');
+        const screamSound = document.getElementById('scream-sound');
+        const playerShootSound = document.getElementById('player-shoot-sound');
+        const alienHitSound = document.getElementById('alien-hit-sound');
+        const bossHitSound = document.getElementById('boss-hit-sound');
+        const playerHitSound = document.getElementById('player-hit-sound');
+        const potionSelectSound = document.getElementById('potion-select-sound');
+        const buttonClickSound = document.getElementById('button-click-sound');
+        const bossSpawnSound = document.getElementById('boss-spawn-sound');
+        const phaseChangeSound = document.getElementById('phase-change-sound');
+        const teleportSound = document.getElementById('teleport-sound');
+        const alienShootSound = document.getElementById('alien-shoot-sound');
+
+        // --- Game Variables ---
+        const potions = [
+            { name: "Speed Potion", effect: "speed" },
+            { name: "Levitate Potion", effect: "levitate" },
+            { name: "Sleep Throw Potion", effect: "slow-aliens" },
+            { name: "Lava Potion", effect: "lava-shot" },
+            { name: "Smart Potion", effect: "auto-aim" },
+            { name: "Lion Potion", effect: "lion-power" },
+            { name: "Strong Potion", effect: "strong" },
+            { name: "Mini Paka Potion", effect: "mini-paka" },
+            { name: "Zap Evolution Potion", effect: "zap-chain" },
+            { name: "Mega Night Potion", effect: "invisible" }
+        ];
+
+        const difficulties = [
+            { name: "Beginner", modifier: "easy" },
+            { name: "Regular", modifier: "normal" },
+            { name: "Hard", modifier: "hard" }
+        ];
+
+        let counter = 500;
+        let selectedPotion = null;
+        let selectedDifficulty = null; // Stores the selected difficulty object
+
+        let gameRunning = false;
+        let gameFrameId = null;
+
+        let player = {
+            x: gameCanvas.width / 2,
+            y: gameCanvas.height - 40,
+            width: 30,
+            height: 30,
+            speed: 5,
+            originalWidth: 30,
+            originalHeight: 30,
+            originalSpeed: 5,
+            asciiFace: 'P'
+        };
+        let projectiles = [];
+        let aliens = [];
+        let keys = {};
+        let explosions = [];
+
+        // Potion effect variables
+        let projectileSpeedMultiplier = 1;
+        let projectileSizeMultiplier = 1;
+        let autoAimEnabled = false;
+        let levitateHitActive = false;
+        let lavaShotEnabled = false;
+        let zapChainEnabled = false;
+        let invisiblePlayerEnabled = false;
+        let invisibleDuration = 0;
+        const INVISIBLE_MAX_DURATION = 180;
+
+        let alienSpeedMultiplier = 1;
+        let alienChasePlayer = false;
+        let initialAlienCount = 5;
+        let currentAlienCount = initialAlienCount;
+        let alienSpawnYOffset = 0;
+        let alienHorizontalSpeedMultiplier = 1;
+        let alienSizeMultiplier = 1;
+
+        let lavaPotionSpawnInterval = 120;
+        let alienSpawnTimer = 0;
+
+        let isLionPotionActive = false;
+
+        // --- BOSS Variables ---
+        let boss = null;
+        let defeatedAliensCount = 0;
+        let defeatedBossesCount = 0;
+        let currentBossType = 0; // 0: No boss, 1: Mini-Boss 1, 2: Mini-Boss 2
+
+        const ALIENS_BEFORE_MINI_BOSS_1_BASE = 5;
+        const ALIENS_BEFORE_MINI_BOSS_2_BASE = 10;
+        let ALIENS_BEFORE_MINI_BOSS_1 = ALIENS_BEFORE_MINI_BOSS_1_BASE; // Will be adjusted by difficulty
+        let ALIENS_BEFORE_MINI_BOSS_2 = ALIENS_BEFORE_MINI_BOSS_2_BASE; // Will be adjusted by difficulty
+
+        // --- Difficulty Variables ---
+        let alienProjectileChance = 0; // % chance for alien to shoot per frame (Hard difficulty)
+        let alienMinionSpawnChance = 0; // % chance for boss to spawn mini-aliens (Hard difficulty)
+
+        // --- Utility Functions ---
+        function playSound(audioElement, loop = false, volume = 0.5) {
+            if (!audioElement || !audioElement.src || audioElement.src.includes('path/to/your/')) {
+                console.warn("Audio file path not set for:", audioElement.id, ". Skipping sound playback.");
+                return;
+            }
+            audioElement.currentTime = 0;
+            audioElement.loop = loop;
+            audioElement.volume = volume;
+            audioElement.play().catch(e => console.error("Error playing sound:", e));
+        }
+
+        function stopSound(audioElement) {
+            if (audioElement) {
+                audioElement.pause();
+                audioElement.currentTime = 0;
+            }
+        }
+
+        // --- Door Interaction ---
+        door.addEventListener('click', () => {
+            playSound(knockSound);
+            setTimeout(() => {
+                playSound(screamSound);
+                door.textContent = "Come in!";
+                setTimeout(() => {
+                    shopContainer.style.display = 'block';
+                    shopContainer.classList.add('visible');
+                    doorContainer.style.opacity = 0;
+                    setTimeout(() => {
+                        doorContainer.style.display = 'none';
+                    }, 1000);
+                }, 1000);
+            }, 500);
+        });
+
+        // --- Shop Entry ---
+        enterShopBtn.addEventListener('click', () => {
+            playSound(buttonClickSound, false, 0.7);
+            const username = usernameInput.value.trim();
+            if (username) {
+                elfDialogue.textContent = `Hello ${username}! Choose your challenge!`;
+                elfWelcomeMessage.textContent = `Hello ${username},`; // Re-use for difficulty selection
+                usernameInput.style.display = 'none';
+                enterShopBtn.style.display = 'none';
+                difficultySelection.style.display = 'block'; // Show difficulty selection
+                renderDifficulties();
+            } else {
+                alert("Please enter your name, adventurer!");
+            }
+        });
+
+        // --- Render Difficulties ---
+        function renderDifficulties() {
+            difficultyShelf.innerHTML = '';
+            difficulties.forEach((difficulty, index) => {
+                const difficultyItem = document.createElement('div');
+                difficultyItem.classList.add('difficulty-item');
+                const difficultyNameText = document.createElement('span');
+                difficultyNameText.textContent = difficulty.name;
+                difficultyItem.appendChild(difficultyNameText);
+                difficultyItem.dataset.modifier = difficulty.modifier;
+                difficultyItem.addEventListener('click', () => {
+                    playSound(potionSelectSound, false, 0.7);
+                    const currentSelected = document.querySelector('.difficulty-item.selected');
+                    if (currentSelected) {
+                        currentSelected.classList.remove('selected');
+                    }
+                    difficultyItem.classList.add('selected');
+                    selectedDifficulty = difficulty;
+                    selectedDifficultyMessage.textContent = `You have chosen ${difficulty.name} difficulty.`;
+                    chooseDifficultyBtn.disabled = false;
+                });
+                difficultyShelf.appendChild(difficultyItem);
+            });
+        }
+
+        // --- Choose Difficulty ---
+        chooseDifficultyBtn.addEventListener('click', () => {
+            playSound(buttonClickSound, false, 0.7);
+            if (selectedDifficulty) {
+                applyDifficultySettings(selectedDifficulty.modifier); // Apply settings now
+                difficultySelection.style.display = 'none'; // Hide difficulty selection
+                potionSelection.style.display = 'block'; // Show potion selection
+                elfWelcomeMessage.textContent = `Excellent! Now, choose your potion wisely.`; // Update welcome message
+                renderPotions(); // Render potions after difficulty is chosen
+            } else {
+                alert("Please select a difficulty first!");
+            }
+        });
+
+        // --- Render Potions ---
+        function renderPotions() {
+            potionShelf.innerHTML = '';
+            potions.forEach((potion, index) => {
+                const potionItem = document.createElement('div');
+                potionItem.classList.add('potion-item');
+                const potionNameText = document.createElement('span');
+                potionNameText.textContent = `${index + 1}: ${potion.name}`;
+                potionItem.appendChild(potionNameText);
+                potionItem.dataset.index = index;
+                potionItem.addEventListener('click', () => {
+                    playSound(potionSelectSound, false, 0.7);
+                    const currentSelected = document.querySelector('.potion-item.selected');
+                    if (currentSelected) {
+                        currentSelected.classList.remove('selected');
+                    }
+                    potionItem.classList.add('selected');
+                    selectedPotion = potion;
+                    selectedPotionMessage.textContent = `You have chosen potion number ${index + 1}: ${potion.name}`;
+                    choosePotionBtn.disabled = false;
+                });
+                potionShelf.appendChild(potionItem);
+            });
+        }
+
+        // --- Choose Potion ---
+        choosePotionBtn.addEventListener('click', () => {
+            playSound(buttonClickSound, false, 0.7);
+            if (selectedPotion) {
+                counter--;
+                inventoryNote.textContent = `Self note: ${counter} left!`;
+                farewellMessage.textContent = `Adventurer, I only have ${counter} left. Thank you, have a nice day! (Pulls wand)`;
+
+                resetPotionEffects();
+                applyPotionEffect(selectedPotion.effect);
+
+                choosePotionBtn.disabled = true;
+                document.querySelectorAll('.potion-item').forEach(item => item.style.pointerEvents = 'none');
+                
+                setTimeout(() => {
+                    shopContainer.style.opacity = 0;
+                    setTimeout(() => {
+                        shopContainer.style.display = 'none';
+                        startGame(); // Start the game after potion selection
+                    }, 1000);
+                }, 2000);
+            } else {
+                alert("Please select a potion first!");
+            }
+        });
+
+        // Function to apply difficulty settings
+        function applyDifficultySettings(modifier) {
+            switch (modifier) {
+                case "easy":
+                    initialAlienCount = 3; // Fewer initial aliens
+                    ALIENS_BEFORE_MINI_BOSS_1 = 3; // Fewer aliens for first boss
+                    ALIENS_BEFORE_MINI_BOSS_2 = 5; // Fewer aliens for second boss
+                    alienSpeedMultiplier = 0.8; // Aliens move slower
+                    alienProjectileChance = 0; // No alien shooting
+                    alienMinionSpawnChance = 0; // No boss mini-aliens
+                    break;
+                case "normal":
+                    initialAlienCount = 5;
+                    ALIENS_BEFORE_MINI_BOSS_1 = ALIENS_BEFORE_MINI_BOSS_1_BASE;
+                    ALIENS_BEFORE_MINI_BOSS_2 = ALIENS_BEFORE_MINI_BOSS_2_BASE;
+                    alienSpeedMultiplier = 1;
+                    alienProjectileChance = 0;
+                    alienMinionSpawnChance = 0;
+                    break;
+                case "hard":
+                    initialAlienCount = 7; // More initial aliens
+                    ALIENS_BEFORE_MINI_BOSS_1 = 7; // More aliens for first boss
+                    ALIENS_BEFORE_MINI_BOSS_2 = 12; // More aliens for second boss
+                    alienSpeedMultiplier = 1.2; // Aliens move faster
+                    alienProjectileChance = 0.005; // 0.5% chance for alien to shoot per frame
+                    alienMinionSpawnChance = 0.01; // 1% chance for boss to spawn mini-aliens
+                    break;
+            }
+            currentAlienCount = initialAlienCount; // Update current alien count based on difficulty
+        }
+
+
+        // Function to reset all potion effects and difficulty settings
+        function resetPotionEffects() {
+            projectileSpeedMultiplier = 1;
+            projectileSizeMultiplier = 1;
+            autoAimEnabled = false;
+            levitateHitActive = false;
+            lavaShotEnabled = false;
+            zapChainEnabled = false;
+            invisiblePlayerEnabled = false;
+            invisibleDuration = 0;
+
+            player.width = player.originalWidth;
+            player.height = player.originalHeight;
+            player.speed = player.originalSpeed;
+            isLionPotionActive = false;
+            player.asciiFace = 'P';
+
+            // Reset alien-based effects to their base, which will then be adjusted by difficulty
+            alienSpeedMultiplier = 1; // This will be multiplied by difficulty speed multiplier
+            alienChasePlayer = false;
+            initialAlienCount = 5; // Base value, will be set by difficulty
+            currentAlienCount = initialAlienCount; // Reset to base, then apply difficulty
+            alienSpawnYOffset = 0;
+            alienHorizontalSpeedMultiplier = 1;
+            alienSizeMultiplier = 1;
+            lavaPotionSpawnInterval = 120;
+            alienSpawnTimer = 0;
+
+            boss = null;
+            defeatedAliensCount = 0;
+            defeatedBossesCount = 0;
+            currentBossType = 0;
+            bossHealthBarContainer.style.display = 'none';
+            bossNameAndPhaseDisplay.style.display = 'none';
+
+            explosions = [];
+            projectiles = []; // Clear projectiles
+        }
+
+        // Function to apply potion effects based on the selected potion's effect string
+        function applyPotionEffect(effect) {
+            // Apply base potion effects first
+            switch (effect) {
+                case "speed":
+                    projectileSpeedMultiplier = 2;
+                    // alienSpeedMultiplier is handled by difficulty then potentially by this potion
+                    break;
+                case "levitate":
+                    levitateHitActive = true;
+                    currentAlienCount = 3; // This overwrites initialAlienCount from difficulty for this specific potion
+                    break;
+                case "slow-aliens":
+                    // This potion makes aliens slower, overrides base and difficulty speed
+                    alienSpeedMultiplier = 0.5;
+                    break;
+                case "lava-shot":
+                    lavaShotEnabled = true;
+                    lavaPotionSpawnInterval = 60;
+                    break;
+                case "auto-aim":
+                    autoAimEnabled = true;
+                    alienSpawnYOffset = gameCanvas.height * 0.2;
+                    break;
+                case "lion-power":
+                    projectileSpeedMultiplier = 1.5;
+                    projectileSizeMultiplier = 1.5;
+                    alienChasePlayer = true;
+                    isLionPotionActive = true;
+                    player.asciiFace = '🦁';
+                    break;
+                case "strong":
+                    projectileSizeMultiplier = 2;
+                    alienSizeMultiplier = 1.5;
+                    // This potion makes aliens slower, overrides base and difficulty speed
+                    alienSpeedMultiplier = 0.7;
+                    break;
+                case "mini-paka":
+                    player.width = player.originalWidth / 2;
+                    player.height = player.originalHeight / 2;
+                    player.speed = player.originalSpeed * 1.5;
+                    player.asciiFace = '◕‿◕';
+                    alienHorizontalSpeedMultiplier = 1.5;
+                    break;
+                case "zap-chain":
+                    zapChainEnabled = true;
+                    currentAlienCount = 8; // This overwrites initialAlienCount from difficulty for this specific potion
+                    break;
+                case "invisible":
+                    invisiblePlayerEnabled = true;
+                    invisibleDuration = INVISIBLE_MAX_DURATION;
+                    break;
+                case "none":
+                default:
+                    break;
+            }
+        }
+
+        // Function to create a new alien
+        function createAlien() {
+            const baseSpeedY = 0.5;
+            const baseSpeedX = 1;
+            const baseWidth = 25;
+
+            let alienSpeed = baseSpeedY * alienSpeedMultiplier;
+            let alienHorizontalSpeed = (Math.random() - 0.5) * baseSpeedX * alienHorizontalSpeedMultiplier;
+            let alienSize = baseWidth * alienSizeMultiplier;
+            let alienShootInterval = 180; // Base interval for alien shooting
+
+            // Hard difficulty alien shooting
+            if (selectedDifficulty && selectedDifficulty.modifier === "hard") {
+                alienShootInterval = 120; // Harder aliens shoot faster
+            }
+
+            return {
+                x: Math.random() * (gameCanvas.width - alienSize) + alienSize / 2,
+                y: 50 + alienSpawnYOffset,
+                width: alienSize,
+                height: alienSize,
+                speedY: alienSpeed,
+                speedX: alienHorizontalSpeed,
+                alive: true,
+                isLevitating: false,
+                levitateDuration: 0,
+                explosionTimer: 0,
+                originalSpeedY: alienSpeed,
+                color: null,
+                asciiFace: '👾',
+                shootTimer: Math.random() * alienShootInterval, // Randomize initial shoot timer
+                shootInterval: alienShootInterval
+            };
+        }
+
+        // Helper to calculate total phases for a given boss
+        function getTotalPhases(potionIndex, bossNumber) {
+            let basePhases = 1;
+            if (bossNumber === 2) basePhases = 2; // Mini-Boss 2 generally has more phases
+
+            // Adjust phases based on potion and boss number
+            if (potionIndex === 0) basePhases += bossNumber === 1 ? 1 : 1; // Speed bosses slightly more phases
+            if (potionIndex === 6) basePhases += bossNumber === 1 ? 1 : 2; // Strong bosses more phases
+
+            if (selectedDifficulty && selectedDifficulty.modifier === "hard") {
+                basePhases += 1; // Add an extra phase for Hard difficulty
+            }
+            return Math.max(1, basePhases); // Ensure at least 1 phase
+        }
+
+        // Function to create a boss
+        function createBoss(potionEffect, bossNumber) {
+            const potionIndex = potions.findIndex(p => p.effect === potionEffect);
+            let totalPhases = getTotalPhases(potionIndex, bossNumber);
+
+            let baseHealthFactor = 1;
+            let baseSpeedFactor = 1;
+            let baseShotIntervalFactor = 1;
+            let spawnMiniAliens = false; // Only true for Hard difficulty
+
+            if (selectedDifficulty) {
+                if (selectedDifficulty.modifier === "easy") {
+                    baseHealthFactor = 0.7; // Less HP for easy
+                    baseSpeedFactor = 0.8; // Slower bosses
+                } else if (selectedDifficulty.modifier === "hard") {
+                    baseHealthFactor = 1.3; // More HP for hard
+                    baseSpeedFactor = 1.2; // Faster bosses
+                    spawnMiniAliens = true;
+                }
+            }
+
+
+            let bossProps = {
+                x: gameCanvas.width / 2,
+                y: 70,
+                width: 70,
+                height: 70,
+                speedY: 0.3 * baseSpeedFactor,
+                speedX: 0.5 * baseSpeedFactor,
+                baseHealth: 10 * baseHealthFactor,
+                health: 10 * baseHealthFactor,
+                maxHealth: 10 * baseHealthFactor,
+                alive: true,
+                name: "Boss",
+                color: 'purple',
+                specialBehavior: null,
+                shotTimer: 0,
+                shotInterval: 90 / baseShotIntervalFactor,
+                currentPhase: 1,
+                totalPhases: totalPhases,
+                asciiFace: 'O_O',
+                spawnMinions: spawnMiniAliens // Property to enable minion spawning
+            };
+
+            // Initial health for Phase 1
+            bossProps.health = Math.ceil(bossProps.baseHealth); // Ensure integer health
+            bossProps.maxHealth = Math.ceil(bossProps.baseHealth); // Set max health for the current phase
+
+
+            if (bossNumber === 1) { // --- MINI-BOSS 1 CONFIGURATIONS ---
+                switch (potionEffect) {
+                    case "speed":
+                        bossProps.name = "Flash Scuttler";
+                        bossProps.baseHealth = 15 * baseHealthFactor;
+                        bossProps.speedY = 1.5 * baseSpeedFactor;
+                        bossProps.color = 'darkblue';
+                        bossProps.shotInterval = 60 / baseShotIntervalFactor;
+                        bossProps.asciiFace = '>o<';
+                        break;
+                    case "levitate":
+                        bossProps.name = "Aether Weaver";
+                        bossProps.baseHealth = 12 * baseHealthFactor;
+                        bossProps.speedY = 0;
+                        bossProps.color = 'lightgray';
+                        bossProps.shotInterval = 100 / baseShotIntervalFactor;
+                        bossProps.asciiFace = '-_-';
+                        bossProps.specialBehavior = function() {
+                            if (this.spawnMinions && Math.random() < alienMinionSpawnChance * 1.5 && aliens.length < 5) {
+                                aliens.push(createAlienAt(this.x + Math.random() * 40 - 20, this.y + this.height / 2, 15, 'white', 'o'));
+                            }
+                        };
+                        break;
+                    case "slow-aliens":
+                        bossProps.name = "Glacial Sentinel";
+                        bossProps.baseHealth = 20 * baseHealthFactor;
+                        bossProps.speedY = 0.1 * baseSpeedFactor;
+                        bossProps.color = 'brown';
+                        bossProps.shotInterval = 150 / baseShotIntervalFactor;
+                        bossProps.asciiFace = 'o.o';
+                        break;
+                    case "lava-shot":
+                        bossProps.name = "Cinder Beast";
+                        bossProps.baseHealth = 18 * baseHealthFactor;
+                        bossProps.speedY = 0.4 * baseSpeedFactor;
+                        bossProps.color = 'red';
+                        bossProps.shotInterval = 90 / baseShotIntervalFactor;
+                        bossProps.asciiFace = '>_<';
+                        break;
+                    case "auto-aim":
+                        bossProps.name = "Gaze Weaver";
+                        bossProps.baseHealth = 10 * baseHealthFactor;
+                        bossProps.speedY = 0.3 * baseSpeedFactor;
+                        bossProps.color = 'gray';
+                        bossProps.teleportTimer = 0;
+                        bossProps.teleportInterval = 120 / baseSpeedFactor;
+                        bossProps.shotInterval = 120 / baseShotIntervalFactor;
+                        bossProps.asciiFace = '@_@';
+                        bossProps.specialBehavior = function() {
+                            this.teleportTimer++;
+                            if (this.teleportTimer >= this.teleportInterval) {
+                                playSound(teleportSound, false, 0.7);
+                                this.x = Math.random() * (gameCanvas.width - this.width) + this.width / 2;
+                                this.y = Math.random() * (gameCanvas.height / 2 - this.height) + this.height / 2;
+                                this.teleportTimer = 0;
+                                this.teleportInterval = Math.max(60, (120 - (this.currentPhase - 1) * 10) / baseSpeedFactor);
+                            }
+                        };
+                        break;
+                    case "lion-power":
+                        bossProps.name = "Feral Vanguard";
+                        bossProps.baseHealth = 20 * baseHealthFactor;
+                        bossProps.speedY = 0.8 * baseSpeedFactor;
+                        bossProps.color = 'gold';
+                        bossProps.width = 80;
+                        bossProps.height = 80;
+                        bossProps.shotInterval = 70 / baseShotIntervalFactor;
+                        bossProps.asciiFace = '^.^';
+                        bossProps.specialBehavior = function() {
+                            const dx = player.x - this.x;
+                            const dy = player.y - this.y;
+                            const distance = Math.sqrt(dx*dx + dy*dy);
+                            if (distance > 1) {
+                                this.x += (dx / distance) * (this.speedY * 1.5);
+                                this.y += (dy / distance) * (this.speedY * 0.5);
+                            }
+                        };
+                        break;
+                    case "strong":
+                        bossProps.name = "Stone Colossus";
+                        bossProps.baseHealth = 25 * baseHealthFactor;
+                        bossProps.width = 90;
+                        bossProps.height = 90;
+                        bossProps.speedY = 0.2 * baseSpeedFactor;
+                        bossProps.color = 'darkgreen';
+                        bossProps.shotInterval = 180 / baseShotIntervalFactor;
+                        bossProps.asciiFace = 'O_O';
+                        break;
+                    case "mini-paka":
+                        bossProps.name = "Pika Minion";
+                        bossProps.baseHealth = 8 * baseHealthFactor;
+                        bossProps.width = 20;
+                        bossProps.height = 20;
+                        bossProps.speedY = 1.0 * baseSpeedFactor;
+                        bossProps.speedX = 2.0 * baseSpeedFactor;
+                        bossProps.color = 'pink';
+                        bossProps.shotInterval = 45 / baseShotIntervalFactor;
+                        bossProps.asciiFace = '^_^';
+                        bossProps.specialBehavior = function() {
+                            this.x += this.speedX;
+                            if (this.x - this.width / 2 < 0 || this.x + this.width / 2 > gameCanvas.width) {
+                                this.speedX *= -1;
+                            }
+                        };
+                        break;
+                    case "zap-chain":
+                        bossProps.name = "Static Overload";
+                        bossProps.baseHealth = 15 * baseHealthFactor;
+                        bossProps.speedY = 0.6 * baseSpeedFactor;
+                        bossProps.color = 'lightblue';
+                        bossProps.shotInterval = 80 / baseShotIntervalFactor;
+                        bossProps.asciiFace = '*_*';
+                        bossProps.specialBehavior = function() {
+                            if (this.spawnMinions && Math.random() < alienMinionSpawnChance * 1.5 && aliens.length < 5) {
+                                aliens.push(createAlienAt(this.x + Math.random() * 60 - 30, this.y + this.height / 2, 10, 'cyan', '*'));
+                            }
+                        };
+                        break;
+                    case "invisible":
+                        bossProps.name = "Whisper Shade";
+                        bossProps.baseHealth = 10 * baseHealthFactor;
+                        bossProps.speedY = 0.4 * baseSpeedFactor;
+                        bossProps.color = 'darkgray';
+                        bossProps.invisibleTimer = 0;
+                        bossProps.invisibleDuration = 120 / baseSpeedFactor;
+                        bossProps.visibleDuration = 120 / baseSpeedFactor;
+                        bossProps.isBossInvisible = false;
+                        bossProps.shotInterval = 100 / baseShotIntervalFactor;
+                        bossProps.asciiFace = '-.-';
+                        bossProps.specialBehavior = function() {
+                            this.invisibleTimer++;
+                            if (this.isBossInvisible) {
+                                if (this.invisibleTimer >= this.invisibleDuration) {
+                                    this.isBossInvisible = false;
+                                    this.invisibleTimer = 0;
+                                    this.visibleDuration = Math.max(60, (120 - (this.currentPhase - 1) * 10) / baseSpeedFactor);
+                                }
+                            } else {
+                                if (this.invisibleTimer >= this.visibleDuration) {
+                                    this.isBossInvisible = true;
+                                    this.invisibleTimer = 0;
+                                    this.invisibleDuration = Math.max(60, (120 - (this.currentPhase - 1) * 10) / baseSpeedFactor);
+                                }
+                            }
+                        };
+                        break;
+                }
+            } else if (bossNumber === 2) { // --- MINI-BOSS 2 CONFIGURATIONS (Harder) ---
+                switch (potionEffect) {
+                    case "speed":
+                        bossProps.name = "Chrono Blight";
+                        bossProps.baseHealth = 25 * baseHealthFactor;
+                        bossProps.speedY = 2.5 * baseSpeedFactor;
+                        bossProps.speedX = 1.0 * baseSpeedFactor;
+                        bossProps.color = 'darkred';
+                        bossProps.shotInterval = 40 / baseShotIntervalFactor;
+                        bossProps.asciiFace = 'X_X';
+                        break;
+                    case "levitate":
+                        bossProps.name = "Astral Anomaly";
+                        bossProps.baseHealth = 20 * baseHealthFactor;
+                        bossProps.speedY = 0;
+                        bossProps.color = 'darkviolet';
+                        bossProps.shotInterval = 70 / baseShotIntervalFactor;
+                        bossProps.asciiFace = 'o.O';
+                        bossProps.specialBehavior = function() {
+                            if (this.spawnMinions && Math.random() < alienMinionSpawnChance * 2 && aliens.length < 8) {
+                                aliens.push(createAlienAt(this.x + Math.random() * 60 - 30, this.y + this.height / 2, 20, 'purple', 'O'));
+                            }
+                        };
+                        break;
+                    case "slow-aliens":
+                        bossProps.name = "Temporal Quake";
+                        bossProps.baseHealth = 35 * baseHealthFactor;
+                        bossProps.speedY = 0.2 * baseSpeedFactor;
+                        bossProps.color = 'darkbrown';
+                        bossProps.shotInterval = 100 / baseShotIntervalFactor;
+                        bossProps.asciiFace = '(o_o)';
+                        break;
+                    case "lava-shot":
+                        bossProps.name = "Infernal Core";
+                        bossProps.baseHealth = 28 * baseHealthFactor;
+                        bossProps.speedY = 0.6 * baseSpeedFactor;
+                        bossProps.color = 'darkorange';
+                        bossProps.shotInterval = 70 / baseShotIntervalFactor;
+                        bossProps.asciiFace = '🔥';
+                        break;
+                    case "auto-aim":
+                        bossProps.name = "Omniscient Eye";
+                        bossProps.baseHealth = 18 * baseHealthFactor;
+                        bossProps.speedY = 0.5 * baseSpeedFactor;
+                        bossProps.color = 'darkblue';
+                        bossProps.teleportTimer = 0;
+                        bossProps.teleportInterval = 60 / baseSpeedFactor;
+                        bossProps.shotInterval = 90 / baseShotIntervalFactor;
+                        bossProps.asciiFace = '👁️';
+                        bossProps.specialBehavior = function() {
+                            this.teleportTimer++;
+                            if (this.teleportTimer >= this.teleportInterval) {
+                                playSound(teleportSound, false, 0.7);
+                                this.x = Math.random() * (gameCanvas.width - this.width) + this.width / 2;
+                                this.y = Math.random() * (gameCanvas.height / 2 - this.height) + this.height / 2;
+                                this.teleportTimer = 0;
+                                this.teleportInterval = Math.max(30, (60 - (this.currentPhase - 1) * 5) / baseSpeedFactor);
+                            }
+                        };
+                        break;
+                    case "lion-power":
+                        bossProps.name = "Apex Predator";
+                        bossProps.baseHealth = 30 * baseHealthFactor;
+                        bossProps.speedY = 1.2 * baseSpeedFactor;
+                        bossProps.color = 'darkgoldenrod';
+                        bossProps.width = 90;
+                        bossProps.height = 90;
+                        bossProps.shotInterval = 50 / baseShotIntervalFactor;
+                        bossProps.asciiFace = '🦁';
+                        bossProps.specialBehavior = function() {
+                            const dx = player.x - this.x;
+                            const dy = player.y - this.y;
+                            const distance = Math.sqrt(dx*dx + dy*dy);
+                            if (distance > 1) {
+                                this.x += (dx / distance) * (this.speedY * 2);
+                                this.y += (dy / distance) * (this.speedY * 0.7);
+                            }
+                        };
+                        break;
+                    case "strong":
+                        bossProps.name = "Iron Behemoth";
+                        bossProps.baseHealth = 40 * baseHealthFactor;
+                        bossProps.width = 110;
+                        bossProps.height = 110;
+                        bossProps.speedY = 0.3 * baseSpeedFactor;
+                        bossProps.color = 'darkslategray';
+                        bossProps.shotInterval = 150 / baseShotIntervalFactor;
+                        bossProps.asciiFace = '[o_o]';
+                        break;
+                    case "mini-paka":
+                        bossProps.name = "Grand Pika";
+                        bossProps.baseHealth = 15 * baseHealthFactor;
+                        bossProps.width = 30;
+                        bossProps.height = 30;
+                        bossProps.speedY = 1.5 * baseSpeedFactor;
+                        bossProps.speedX = 3.0 * baseSpeedFactor;
+                        bossProps.color = 'fuchsia';
+                        bossProps.shotInterval = 25 / baseShotIntervalFactor;
+                        bossProps.asciiFace = '(*o*)';
+                        bossProps.specialBehavior = function() {
+                            this.x += this.speedX;
+                            if (this.x - this.width / 2 < 0 || this.x + this.width / 2 > gameCanvas.width) {
+                                this.speedX *= -1;
+                            }
+                        };
+                        break;
+                    case "zap-chain":
+                        bossProps.name = "Arcane Overlord";
+                        bossProps.baseHealth = 22 * baseHealthFactor;
+                        bossProps.speedY = 0.8 * baseSpeedFactor;
+                        bossProps.color = 'darkturquoise';
+                        bossProps.shotInterval = 60 / baseShotIntervalFactor;
+                        bossProps.asciiFace = '⚡_⚡';
+                        bossProps.specialBehavior = function() {
+                            if (this.spawnMinions && Math.random() < alienMinionSpawnChance * 2 && aliens.length < 12) {
+                                aliens.push(createAlienAt(this.x + Math.random() * 80 - 40, this.y + this.height / 2, 12, 'lime', 'Z'));
+                            }
+                        };
+                        break;
+                    case "invisible":
+                        bossProps.name = "Phantom King";
+                        bossProps.baseHealth = 16 * baseHealthFactor;
+                        bossProps.speedY = 0.6 * baseSpeedFactor;
+                        bossProps.color = 'black';
+                        bossProps.invisibleTimer = 0;
+                        bossProps.invisibleDuration = 90 / baseSpeedFactor;
+                        bossProps.visibleDuration = 90 / baseSpeedFactor;
+                        bossProps.isBossInvisible = false;
+                        bossProps.shotInterval = 80 / baseShotIntervalFactor;
+                        bossProps.asciiFace = '👻';
+                        bossProps.specialBehavior = function() {
+                            this.invisibleTimer++;
+                            if (this.isBossInvisible) {
+                                if (this.invisibleTimer >= this.invisibleDuration) {
+                                    this.isBossInvisible = false;
+                                    this.invisibleTimer = 0;
+                                    this.visibleDuration = Math.max(30, (90 - (this.currentPhase - 1) * 5) / baseSpeedFactor);
+                                }
+                            } else {
+                                if (this.invisibleTimer >= this.visibleDuration) {
+                                    this.isBossInvisible = true;
+                                    this.invisibleTimer = 0;
+                                    this.invisibleDuration = Math.max(30, (90 - (this.currentPhase - 1) * 5) / baseSpeedFactor);
+                                }
+                            }
+                        };
+                        break;
+                }
+            }
+            bossProps.health = Math.ceil(bossProps.baseHealth);
+            bossProps.maxHealth = Math.ceil(bossProps.baseHealth);
+            bossProps.shotInterval = Math.max(10, Math.round(bossProps.shotInterval)); // Ensure interval is reasonable
+            return bossProps;
+        }
+
+        // Helper function to create an alien at a specific position with specific properties (for boss minions)
+        function createAlienAt(x, y, size, color, ascii) {
+             const baseSpeedY = 0.5; // Use a base speed for minions
+            const baseSpeedX = 1;
+            let alienSpeed = baseSpeedY * alienSpeedMultiplier; // Apply global alien speed multiplier
+            let alienHorizontalSpeed = (Math.random() - 0.5) * baseSpeedX * alienHorizontalSpeedMultiplier;
+
+            // Make sure hard difficulty minions move faster
+            if (selectedDifficulty && selectedDifficulty.modifier === "hard") {
+                alienSpeed *= 1.5;
+                alienHorizontalSpeed *= 1.5;
+            }
+
+            return {
+                x: x,
+                y: y,
+                width: size,
+                height: size,
+                speedY: alienSpeed,
+                speedX: alienHorizontalSpeed,
+                alive: true,
+                isLevitating: false,
+                levitateDuration: 0,
+                explosionTimer: 0,
+                originalSpeedY: alienSpeed,
+                color: color,
+                asciiFace: ascii,
+                shootTimer: Math.random() * 120, // Minions shoot less frequently
+                shootInterval: 180 // Hardcoded interval for minion shots
+            };
+        }
+
+
+        // Function to handle boss shooting patterns based on phase
+        function bossShoot(boss) {
+            let pSpeed = 3 + (boss.currentPhase * 0.5); // Projectile speed generally increases
+            let pSize = 10;
+            let numProjectiles = 1;
+            let pChar = '-'; // Default projectile char for boss
+
+            // Adjust base speed for difficulty
+            if (selectedDifficulty) {
+                if (selectedDifficulty.modifier === "easy") {
+                    pSpeed *= 0.8;
+                } else if (selectedDifficulty.modifier === "hard") {
+                    pSpeed *= 1.2;
+                }
+            }
+
+            switch (boss.name) {
+                case "Flash Scuttler":
+                case "Chrono Blight":
+                    numProjectiles = boss.currentPhase;
+                    pSpeed = (5 + (boss.currentPhase * 1)) * (selectedDifficulty.modifier === "hard" ? 1.2 : 1);
+                    pChar = '>';
+                    if (boss.name === "Chrono Blight") {
+                        pSpeed *= 1.2;
+                        numProjectiles += 1;
+                    }
+                    for (let i = 0; i < numProjectiles; i++) {
+                        const angleSpread = (Math.PI / 8) * (numProjectiles - 1) / 2;
+                        const angle = (Math.PI / 2) - angleSpread + (i * (Math.PI / 8));
+                        projectiles.push({
+                            x: boss.x,
+                            y: boss.y + boss.height / 2,
+                            width: pSize,
+                            height: pSize * 2,
+                            speedX: Math.cos(angle) * pSpeed * 0.5,
+                            speedY: Math.sin(angle) * pSpeed,
+                            speed: pSpeed,
+                            alive: true,
+                            isBossProjectile: true,
+                            color: (boss.name === "Chrono Blight") ? 'red' : 'lightblue',
+                            asciiChar: pChar
+                        });
+                    }
+                    boss.shotInterval = Math.max(20, (boss.name === "Chrono Blight" ? 30 : 60) - (boss.currentPhase * 5) / (selectedDifficulty.modifier === "hard" ? 1.2 : 1));
+                    break;
+                case "Aether Weaver":
+                case "Astral Anomaly":
+                    numProjectiles = Math.min(5, boss.currentPhase + (boss.name === "Astral Anomaly" ? 2 : 0));
+                    pSize = (25 + (boss.currentPhase * 5)) * (selectedDifficulty.modifier === "hard" ? 1.1 : 1);
+                    pSpeed = (1 + (boss.currentPhase * 0.2)) * (selectedDifficulty.modifier === "hard" ? 1.2 : 1);
+                    pChar = '#';
+                    if (boss.name === "Astral Anomaly") {
+                        pSize *= 1.2;
+                        pSpeed *= 1.5;
+                    }
+                    for (let i = 0; i < numProjectiles; i++) {
+                        projectiles.push({
+                            x: boss.x + (i - (numProjectiles - 1) / 2) * 30,
+                            y: boss.y + boss.height / 2,
+                            width: pSize,
+                            height: pSize,
+                            speedX: (Math.random() - 0.5) * (boss.currentPhase * 0.5),
+                            speedY: pSpeed,
+                            speed: pSpeed,
+                            alive: true,
+                            isBossProjectile: true,
+                            color: (boss.name === "Astral Anomaly") ? 'purple' : 'gray',
+                            asciiChar: pChar
+                        });
+                    }
+                    boss.shotInterval = Math.max(60, (boss.name === "Astral Anomaly" ? 50 : 100) - (boss.currentPhase * 10) / (selectedDifficulty.modifier === "hard" ? 1.2 : 1));
+                    break;
+
+                case "Glacial Sentinel":
+                case "Temporal Quake":
+                    numProjectiles = Math.min(7, boss.currentPhase * 2 + (boss.name === "Temporal Quake" ? 2 : 0));
+                    pSize = (20 + (boss.currentPhase * 2)) * (selectedDifficulty.modifier === "hard" ? 1.1 : 1);
+                    pSpeed = (0.5 + (boss.currentPhase * 0.1)) * (selectedDifficulty.modifier === "hard" ? 1.2 : 1);
+                    pChar = 'o';
+                    if (boss.name === "Temporal Quake") {
+                        pSpeed *= 1.2;
+                    }
+                    for (let i = 0; i < numProjectiles; i++) {
+                        projectiles.push({
+                            x: boss.x + (i - (numProjectiles - 1) / 2) * 40,
+                            y: boss.y + boss.height / 2,
+                            width: pSize,
+                            height: pSize,
+                            speedX: 0,
+                            speedY: pSpeed,
+                            speed: pSpeed,
+                            alive: true,
+                            isBossProjectile: true,
+                            color: (boss.name === "Temporal Quake") ? 'darkviolet' : 'brown',
+                            asciiChar: pChar
+                        });
+                    }
+                    boss.shotInterval = Math.max(80, (boss.name === "Temporal Quake" ? 70 : 150) - (boss.currentPhase * 15) / (selectedDifficulty.modifier === "hard" ? 1.2 : 1));
+                    break;
+                case "Cinder Beast":
+                case "Infernal Core":
+                    numProjectiles = Math.min(8, boss.currentPhase * 2 + (boss.name === "Infernal Core" ? 2 : 0));
+                    pSize = (15 + (boss.currentPhase * 3)) * (selectedDifficulty.modifier === "hard" ? 1.1 : 1);
+                    pSpeed = (2 + (boss.currentPhase * 0.3)) * (selectedDifficulty.modifier === "hard" ? 1.2 : 1);
+                    pChar = '^';
+
+                    if (boss.currentPhase <= 2 || boss.name === "Cinder Beast") {
+                        for (let i = 0; i < numProjectiles; i++) {
+                            const angleSpread = (Math.PI / 4) * (numProjectiles - 1) / 2;
+                            const angle = (Math.PI / 2) - angleSpread + (i * (Math.PI / 4) / numProjectiles);
+                            projectiles.push({
+                                x: boss.x,
+                                y: boss.y + boss.height / 2,
+                                width: pSize,
+                                height: pSize,
+                                speedX: Math.cos(angle) * pSpeed * 0.7,
+                                speedY: Math.sin(angle) * pSpeed,
+                                speed: pSpeed,
+                                alive: true,
+                                isBossProjectile: true,
+                                color: (boss.name === "Infernal Core") ? 'red' : 'orange',
+                                asciiChar: pChar
+                            });
+                        }
+                    } else {
+                        const numRingShots = Math.min(16, 4 + boss.currentPhase * 3);
+                        const ringSpeed = pSpeed * 1.2;
+                        for (let i = 0; i < numRingShots; i++) {
+                            const angle = (i / numRingShots) * Math.PI * 2;
+                            projectiles.push({
+                                x: boss.x,
+                                y: boss.y + boss.height / 2,
+                                width: pSize * 0.7,
+                                height: pSize * 0.7,
+                                speedX: Math.cos(angle) * ringSpeed,
+                                speedY: Math.sin(angle) * ringSpeed,
+                                speed: ringSpeed,
+                                alive: true,
+                                isBossProjectile: true,
+                                color: 'darkred',
+                                asciiChar: pChar
+                            });
+                        }
+                    }
+                    boss.shotInterval = Math.max(40, (boss.name === "Infernal Core" ? 30 : 90) - (boss.currentPhase * 8) / (selectedDifficulty.modifier === "hard" ? 1.2 : 1));
+                    break;
+                case "Gaze Weaver":
+                case "Omniscient Eye":
+                    numProjectiles = Math.min(4, boss.currentPhase + (boss.name === "Omniscient Eye" ? 1 : 0));
+                    pSpeed = (3 + (boss.currentPhase * 0.5)) * (selectedDifficulty.modifier === "hard" ? 1.2 : 1);
+                    pChar = '>';
+                    if (boss.name === "Omniscient Eye") {
+                        pSpeed *= 1.3;
+                    }
+                    for (let i = 0; i < numProjectiles; i++) {
+                        projectiles.push({
+                            x: boss.x + (Math.random() * 20 - 10),
+                            y: boss.y + boss.height / 2,
+                            width: pSize,
+                            height: pSize,
+                            speed: pSpeed,
+                            speedX: 0,
+                            speedY: 0,
+                            alive: true,
+                            isBossProjectile: true,
+                            color: (boss.name === "Omniscient Eye") ? 'darkblue' : 'darkgray',
+                            isHoming: true,
+                            homingStrength: (0.05 + (boss.currentPhase * (boss.name === "Omniscient Eye" ? 0.02 : 0.01))) * (selectedDifficulty.modifier === "hard" ? 1.5 : 1),
+                            asciiChar: pChar
+                        });
+                    }
+                    boss.shotInterval = Math.max(50, (boss.name === "Omniscient Eye" ? 40 : 120) - (boss.currentPhase * 10) / (selectedDifficulty.modifier === "hard" ? 1.2 : 1));
+                    break;
+                case "Feral Vanguard":
+                case "Apex Predator":
+                    numProjectiles = Math.min(3, Math.ceil(boss.currentPhase / 2) + (boss.name === "Apex Predator" ? 1 : 0));
+                    pSize = (40 + (boss.currentPhase * 5)) * (selectedDifficulty.modifier === "hard" ? 1.1 : 1);
+                    pSpeed = (4 + (boss.currentPhase * 0.5)) * (selectedDifficulty.modifier === "hard" ? 1.2 : 1);
+                    pChar = ' roar ';
+                    if (boss.name === "Apex Predator") {
+                        pSize *= 1.2;
+                        pSpeed *= 1.2;
+                    }
+                    for (let i = 0; i < numProjectiles; i++) {
+                        projectiles.push({
+                            x: boss.x,
+                            y: boss.y + boss.height / 2,
+                            width: pSize * 2,
+                            height: pSize / 2,
+                            speedX: (i - (numProjectiles - 1) / 2) * pSpeed * 0.5,
+                            speedY: pSpeed,
+                            speed: pSpeed,
+                            alive: true,
+                            isBossProjectile: true,
+                            color: (boss.name === "Apex Predator") ? 'darkgoldenrod' : 'gold',
+                            isRoar: true,
+                            initialX: boss.x,
+                            asciiChar: pChar
+                        });
+                    }
+                    boss.shotInterval = Math.max(40, (boss.name === "Apex Predator" ? 30 : 70) - (boss.currentPhase * 5) / (selectedDifficulty.modifier === "hard" ? 1.2 : 1));
+                    break;
+                case "Stone Colossus":
+                case "Iron Behemoth":
+                    numProjectiles = Math.min(3, Math.ceil(boss.currentPhase / 3) + (boss.name === "Iron Behemoth" ? 1 : 0));
+                    pSize = (50 + (boss.currentPhase * 5)) * (selectedDifficulty.modifier === "hard" ? 1.1 : 1);
+                    pSpeed = (1 + (boss.currentPhase * 0.1)) * (selectedDifficulty.modifier === "hard" ? 1.2 : 1);
+                    pChar = 'X';
+                    if (boss.name === "Iron Behemoth") {
+                        pSize *= 1.2;
+                        pSpeed *= 1.2;
+                    }
+                    for (let i = 0; i < numProjectiles; i++) {
+                        projectiles.push({
+                            x: boss.x + (i - (numProjectiles - 1) / 2) * 60,
+                            y: boss.y + boss.height / 2,
+                            width: pSize,
+                            height: pSize,
+                            speedX: 0,
+                            speedY: pSpeed,
+                            speed: pSpeed,
+                            alive: true,
+                            isBossProjectile: true,
+                            color: (boss.name === "Iron Behemoth") ? 'darkslategray' : 'darkgreen',
+                            isShockwave: (boss.currentPhase >= 3 || boss.name === "Iron Behemoth"),
+                            asciiChar: pChar
+                        });
+                    }
+                    boss.shotInterval = Math.max(100, (boss.name === "Iron Behemoth" ? 120 : 180) - (boss.currentPhase * 15) / (selectedDifficulty.modifier === "hard" ? 1.2 : 1));
+                    break;
+                case "Pika Minion":
+                case "Grand Pika":
+                    numProjectiles = 3 + (boss.currentPhase * 2 + (boss.name === "Grand Pika" ? 2 : 0));
+                    pSize = 8;
+                    pSpeed = (6 + (boss.currentPhase * 1)) * (selectedDifficulty.modifier === "hard" ? 1.2 : 1);
+                    pChar = '.';
+                    if (boss.name === "Grand Pika") {
+                        pSpeed *= 1.3;
+                    }
+                    for (let i = 0; i < numProjectiles; i++) {
+                        const angle = Math.random() * Math.PI * 2;
+                        projectiles.push({
+                            x: boss.x,
+                            y: boss.y + boss.height / 2,
+                            width: pSize,
+                            height: pSize,
+                            speedX: Math.cos(angle) * pSpeed,
+                            speedY: Math.sin(angle) * pSpeed,
+                            speed: pSpeed,
+                            alive: true,
+                            isBossProjectile: true,
+                            color: (boss.name === "Grand Pika") ? 'fuchsia' : 'hotpink',
+                            isBouncing: true,
+                            asciiChar: pChar
+                        });
+                    }
+                    boss.shotInterval = Math.max(10, (boss.name === "Grand Pika" ? 15 : 45) - (boss.currentPhase * 2) / (selectedDifficulty.modifier === "hard" ? 1.2 : 1));
+                    break;
+                case "Static Overload":
+                case "Arcane Overlord":
+                    numProjectiles = Math.min(5, boss.currentPhase + (boss.name === "Arcane Overlord" ? 1 : 0));
+                    pSpeed = (4 + (boss.currentPhase * 0.5)) * (selectedDifficulty.modifier === "hard" ? 1.2 : 1);
+                    pChar = '~';
+                    if (boss.name === "Arcane Overlord") {
+                        pSpeed *= 1.3;
+                    }
+                    for (let i = 0; i < numProjectiles; i++) {
+                        const dx = player.x - boss.x;
+                        const dy = player.y - boss.y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        let angle = Math.atan2(dy, dx);
+
+                        angle += (Math.random() - 0.5) * (Math.PI / 16) * (boss.currentPhase + (boss.name === "Arcane Overlord" ? 1 : 0)) * (selectedDifficulty.modifier === "hard" ? 0.7 : 0.5);
+
+                        projectiles.push({
+                            x: boss.x,
+                            y: boss.y + boss.height / 2,
+                            width: 12,
+                            height: 12,
+                            speedX: Math.cos(angle) * pSpeed,
+                            speedY: Math.sin(angle) * pSpeed,
+                            speed: pSpeed,
+                            alive: true,
+                            isBossProjectile: true,
+                            color: (boss.name === "Arcane Overlord") ? 'lime' : 'yellow',
+                            isZap: true,
+                            asciiChar: pChar
+                        });
+                    }
+                    boss.shotInterval = Math.max(30, (boss.name === "Arcane Overlord" ? 50 : 80) - (boss.currentPhase * 7) / (selectedDifficulty.modifier === "hard" ? 1.2 : 1));
+                    break;
+                case "Whisper Shade":
+                case "Phantom King":
+                    numProjectiles = Math.min(4, boss.currentPhase + (boss.name === "Phantom King" ? 1 : 0));
+                    pSpeed = (2 + (boss.currentPhase * 0.3)) * (selectedDifficulty.modifier === "hard" ? 1.2 : 1);
+                    pChar = 'x';
+                    if (boss.name === "Phantom King") {
+                        pSpeed *= 1.3;
+                    }
+                    for (let i = 0; i < numProjectiles; i++) {
+                        projectiles.push({
+                            x: boss.x + (Math.random() * 30 - 15),
+                            y: boss.y + boss.height / 2,
+                            width: pSize,
+                            height: pSize,
+                            speed: pSpeed,
+                            alive: true,
+                            isBossProjectile: true,
+                            color: (boss.name === "Phantom King") ? 'black' : 'darkgray',
+                            isInvisible: boss.isBossInvisible,
+                            isSlowing: (boss.currentPhase >= 3 || boss.name === "Phantom King"),
+                            asciiChar: pChar
+                        });
+                    }
+                    boss.shotInterval = Math.max(50, (boss.name === "Phantom King" ? 60 : 100) - (boss.currentPhase * 8) / (selectedDifficulty.modifier === "hard" ? 1.2 : 1));
+                    break;
+            }
+        }
+
+
+        function startGame() {
+            gameArea.style.display = 'flex';
+            gameArea.classList.add('visible');
+
+            gameRunning = true;
+            gameMessages.textContent = "";
+
+            player.x = gameCanvas.width / 2;
+            if (selectedPotion && selectedPotion.effect === "mini-paka") {
+                player.width = player.originalWidth / 2;
+                player.height = player.originalHeight / 2;
+                player.speed = player.originalSpeed * 1.5;
+            } else {
+                player.width = player.originalWidth;
+                player.height = player.originalHeight;
+            }
+            player.speed = player.originalSpeed;
+
+            if (!isLionPotionActive && (selectedPotion && selectedPotion.effect !== "mini-paka")) {
+                 player.asciiFace = 'P';
+            }
+
+            aliens = [];
+            // Initial alien count is set by difficulty, then potentially overridden by certain potions
+            if (!(selectedPotion && (selectedPotion.effect === "levitate" || selectedPotion.effect === "zap-chain"))) {
+                currentAlienCount = initialAlienCount;
+            }
+            for (let i = 0; i < currentAlienCount; i++) {
+                aliens.push(createAlien());
+            }
+
+            projectiles = [];
+            explosions = [];
+            alienSpawnTimer = 0;
+            defeatedAliensCount = 0;
+            defeatedBossesCount = 0;
+            currentBossType = 0;
+            boss = null;
+            bossHealthBarContainer.style.display = 'none';
+            bossNameAndPhaseDisplay.style.display = 'none';
+            gameMessages.style.color = '#0f0';
+            
+
+            document.addEventListener('keydown', handleKeyDown);
+            document.addEventListener('keyup', handleKeyUp);
+
+            if (gameFrameId) {
+                cancelAnimationFrame(gameFrameId);
+            }
+            gameLoop();
+        }
+
+        function updateGame() {
+            if (invisiblePlayerEnabled && invisibleDuration > 0) {
+                invisibleDuration--;
+                if (invisibleDuration <= 0) {
+                    invisiblePlayerEnabled = false;
+                    gameMessages.textContent = "Invisibility wore off!";
+                }
+            }
+
+            if (player.speed !== player.originalSpeed && !invisiblePlayerEnabled) {
+                // Decay of slowing effect if not invisible and not actively slowed by a projectile
+                player.speed = Math.min(player.originalSpeed, player.speed + 0.1);
+            }
+
+
+            // Player movement
+            if (keys['ArrowLeft'] && (player.x - player.width / 2) > 0) {
+                player.x -= player.speed;
+            }
+            if (keys['ArrowRight'] && (player.x + player.width / 2) < gameCanvas.width) {
+                player.x += player.speed;
+            }
+
+            // Projectile movement and special behaviors
+            projectiles.forEach(p => {
+                if (p.isBossProjectile) {
+                    if (p.isHoming) {
+                        const dx = player.x - p.x;
+                        const dy = player.y - p.y;
+                        const angle = Math.atan2(dy, dx);
+                        p.speedX = Math.cos(angle) * p.speed;
+                        p.speedY = Math.sin(angle) * p.speed;
+                    }
+                    p.x += p.speedX || 0;
+                    p.y += p.speedY || p.speed;
+
+                    if (p.isBouncing) {
+                        if (p.x - p.width / 2 < 0 || p.x + p.width / 2 > gameCanvas.width) {
+                            p.speedX *= -1;
+                        }
+                        if (p.y - p.height / 2 < 0 || p.y + p.height / 2 > gameCanvas.height) {
+                            p.speedY *= -1;
+                        }
+                    }
+
+                    if (p.isSlowing) {
+                        if (!invisiblePlayerEnabled &&
+                            player.x - player.width / 2 < p.x + p.width / 2 &&
+                            player.x + player.width / 2 > p.x - p.width / 2 &&
+                            player.y - player.height / 2 < p.y + p.height / 2 &&
+                            player.y + player.height / 2 > p.y - player.height / 2) {
+                            player.speed = player.originalSpeed * 0.3; // More significant slow
+                        }
+                    }
+                } else if (p.isAlienProjectile) { // Alien projectile logic
+                    p.x += p.speedX;
+                    p.y += p.speedY;
+                }
+                else { // Player projectile
+                    p.y += -p.speed * projectileSpeedMultiplier;
+                }
+                if (autoAimEnabled && !p.isBossProjectile && !p.isAlienProjectile) {
+                    let target = null;
+                    if (currentBossType > 0 && boss && boss.alive) {
+                        target = boss;
+                    } else if (aliens.length > 0) {
+                        target = aliens.reduce((closest, alien) => {
+                            if (!alien.alive || alien.isLevitating) return closest;
+                            const distToClosest = closest ? Math.sqrt(Math.pow(p.x - closest.x, 2) + Math.pow(p.y - closest.y, 2)) : Infinity;
+                            const distToAlien = Math.sqrt(Math.pow(p.x - alien.x, 2) + Math.pow(p.y - alien.y, 2));
+                            return distToAlien < distToClosest ? alien : closest;
+                        }, null);
+                    }
+
+                    if (target) {
+                        const dx = target.x - p.x;
+                        const dy = target.y + target.height / 2 - p.y;
+                        const angle = Math.atan2(dy, dx);
+                        p.x += Math.cos(angle) * 3;
+                        p.y += Math.sin(angle) * 3;
+                    }
+                }
+            });
+
+            projectiles = projectiles.filter(p => p.y + p.height > 0 && p.y < gameCanvas.height && p.x + p.width > 0 && p.x < gameCanvas.width);
+
+            // Alien movement and explosion logic
+            aliens.forEach(alien => {
+                if (!alien.alive) return;
+
+                if (alien.isLevitating) {
+                    alien.explosionTimer--;
+                    if (alien.explosionTimer <= 0) {
+                        alien.alive = false;
+                        createExplosion(alien.x, alien.y, 'red', 40, 25);
+                        defeatedAliensCount++;
+                        
+                        if (currentBossType === 0) {
+                            if (defeatedBossesCount === 0 && defeatedAliensCount >= ALIENS_BEFORE_MINI_BOSS_1) {
+                                currentBossType = 1;
+                                boss = createBoss(selectedPotion.effect, 1);
+                                gameMessages.textContent = `A powerful foe approaches: ${boss.name}!`;
+                                bossNameAndPhaseDisplay.textContent = `${boss.name} - Phase ${boss.currentPhase}/${boss.totalPhases}`;
+                                bossHealthBarContainer.style.display = 'block';
+                                bossNameAndPhaseDisplay.style.display = 'block';
+                                playSound(bossSpawnSound, false, 0.8);
+                            } else if (defeatedBossesCount === 1 && defeatedAliensCount >= ALIENS_BEFORE_MINI_BOSS_1 + ALIENS_BEFORE_MINI_BOSS_2) {
+                                currentBossType = 2;
+                                boss = createBoss(selectedPotion.effect, 2);
+                                gameMessages.textContent = `An even greater threat appears: ${boss.name}!`;
+                                bossNameAndPhaseDisplay.textContent = `${boss.name} - Phase ${boss.currentPhase}/${boss.totalPhases}`;
+                                bossHealthBarContainer.style.display = 'block';
+                                bossNameAndPhaseDisplay.style.display = 'block';
+                                playSound(bossSpawnSound, false, 0.8);
+                            }
+                        }
+                    }
+                    return;
+                }
+
+                alien.y += alien.speedY;
+
+                alien.x += alien.speedX;
+                if (alien.x - alien.width / 2 < 0 || alien.x + alien.width / 2 > gameCanvas.width) {
+                    alien.speedX *= -1;
+                }
+
+                if (alienChasePlayer) {
+                    const dx = player.x - alien.x;
+                    const dy = player.y - alien.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    if (distance > 1) {
+                        alien.x += (dx / distance) * (alien.speedY * 0.5);
+                    }
+                }
+
+                // Alien shooting (Hard difficulty only)
+                if (selectedDifficulty && selectedDifficulty.modifier === "hard" && alienProjectileChance > 0) {
+                    alien.shootTimer++;
+                    if (alien.shootTimer >= alien.shootInterval && Math.random() < alienProjectileChance * 10) { // Increased chance when timer up
+                        playSound(alienShootSound, false, 0.3);
+                        projectiles.push({
+                            x: alien.x,
+                            y: alien.y + alien.height / 2,
+                            width: 5,
+                            height: 10,
+                            speedX: (player.x - alien.x) / 60, // Aim towards player, takes 1 sec to reach bottom
+                            speedY: (player.y - alien.y) / 60,
+                            alive: true,
+                            isAlienProjectile: true,
+                            color: 'red',
+                            asciiChar: 'v'
+                        });
+                        alien.shootTimer = 0;
+                        alien.shootInterval = Math.max(60, alien.shootInterval - 5); // Make them shoot slightly faster over time
+                    }
+                }
+
+
+                // Collision with player
+                if (!invisiblePlayerEnabled &&
+                    player.x - player.width / 2 < alien.x + alien.width / 2 &&
+                    player.x + player.width / 2 > alien.x - alien.width / 2 &&
+                    player.y - player.height / 2 < alien.y + alien.height / 2 &&
+                    player.y + player.height / 2 > alien.y - alien.height / 2) {
+                    gameOver("You were hit by an alien!");
+                }
+            });
+
+            // Boss movement and special behavior
+            if (currentBossType > 0 && boss && boss.alive) {
+                if (!boss.isBossInvisible) {
+                    boss.y += boss.speedY;
+                    boss.x += boss.speedX;
+
+                    if (boss.x - boss.width / 2 < 0 || boss.x + boss.width / 2 > gameCanvas.width) {
+                        boss.speedX *= -1;
+                    }
+                    if (boss.y - boss.height / 2 < 0 || boss.y + boss.height / 2 > gameCanvas.height / 2) {
+                        boss.speedY *= -1;
+                    }
+                }
+
+                if (boss.specialBehavior) {
+                    boss.specialBehavior();
+                }
+
+                boss.shotTimer++;
+                if (boss.shotTimer >= boss.shotInterval) {
+                    bossShoot(boss);
+                    boss.shotTimer = 0;
+                }
+
+                // Check for player collision with boss
+                if (!invisiblePlayerEnabled &&
+                    player.x - player.width / 2 < boss.x + boss.width / 2 &&
+                    player.x + boss.width / 2 > boss.x - boss.width / 2 &&
+                    player.y - player.height / 2 < boss.y + boss.height / 2 &&
+                    player.y + boss.height / 2 > boss.y - boss.height / 2) {
+                    gameOver("You were defeated by the " + boss.name + "!");
+                }
+            }
+
+            // Collision detection (projectile-alien, projectile-boss, player-alienProjectile)
+            projectiles.forEach(p => {
+                if (!p.alive) return;
+
+                // Collision with player by boss/alien projectiles
+                if ((p.isBossProjectile || p.isAlienProjectile) && !invisiblePlayerEnabled &&
+                    player.x - player.width / 2 < p.x + p.width / 2 &&
+                    player.x + p.width / 2 > p.x - p.width / 2 &&
+                    player.y - player.height / 2 < p.y + p.height / 2 &&
+                    player.y + p.height / 2 > p.y - player.height / 2) {
+                    playSound(playerHitSound, false, 0.7);
+                    gameOver("You were hit by an enemy attack!");
+                }
+
+                // Check collision with aliens (only player projectiles hit aliens)
+                if (!p.isBossProjectile && !p.isAlienProjectile) {
+                    aliens.forEach(alien => {
+                        if (!alien.alive || alien.isLevitating) return;
+
+                        if (p.x - p.width / 2 < alien.x + alien.width / 2 &&
+                            p.x + p.width / 2 > alien.x - alien.width / 2 &&
+                            p.y - p.height / 2 < alien.y + alien.height / 2 &&
+                            p.y + p.height / 2 > alien.y - alien.height / 2) {
+                            p.alive = false;
+                            playSound(alienHitSound, false, 0.6);
+
+                            if (levitateHitActive) {
+                                alien.isLevitating = true;
+                                alien.explosionTimer = 60;
+                                alien.speedY = 0;
+                                gameMessages.textContent = "Alien levitated and will explode!";
+                            } else {
+                                alien.alive = false;
+                                defeatedAliensCount++;
+                            }
+
+                            if (zapChainEnabled) {
+                                aliens.forEach(otherAlien => {
+                                    if (otherAlien.alive && otherAlien !== alien && !otherAlien.isLevitating) {
+                                        const distance = Math.sqrt(
+                                            Math.pow(alien.x - otherAlien.x, 2) +
+                                            Math.pow(alien.y - otherAlien.y, 2)
+                                        );
+                                        if (distance < 70) {
+                                            if (levitateHitActive) {
+                                                otherAlien.isLevitating = true;
+                                                otherAlien.explosionTimer = 60;
+                                                otherAlien.speedY = 0;
+                                            } else {
+                                                otherAlien.alive = false;
+                                                defeatedAliensCount++;
+                                            }
+                                            playSound(alienHitSound, false, 0.4);
+                                        }
+                                    }
+                                });
+                            }
+                        }
+                    });
+                }
+
+                // Check for boss spawn conditions only if no boss is currently active (moved out of alien collision loop)
+                if (currentBossType === 0) {
+                    if (defeatedBossesCount === 0 && defeatedAliensCount >= ALIENS_BEFORE_MINI_BOSS_1) {
+                        currentBossType = 1;
+                        boss = createBoss(selectedPotion.effect, 1);
+                        gameMessages.textContent = `A powerful foe approaches: ${boss.name}!`;
+                        bossNameAndPhaseDisplay.textContent = `${boss.name} - Phase ${boss.currentPhase}/${boss.totalPhases}`;
+                        bossHealthBarContainer.style.display = 'block';
+                        bossNameAndPhaseDisplay.style.display = 'block';
+                        playSound(bossSpawnSound, false, 0.8);
+                    } else if (defeatedBossesCount === 1 && defeatedAliensCount >= ALIENS_BEFORE_MINI_BOSS_1 + ALIENS_BEFORE_MINI_BOSS_2) {
+                        currentBossType = 2;
+                        boss = createBoss(selectedPotion.effect, 2);
+                        gameMessages.textContent = `An even greater threat appears: ${boss.name}!`;
+                        bossNameAndPhaseDisplay.textContent = `${boss.name} - Phase ${boss.currentPhase}/${boss.totalPhases}`;
+                        bossHealthBarContainer.style.display = 'block';
+                        bossNameAndPhaseDisplay.style.display = 'block';
+                        playSound(bossSpawnSound, false, 0.8);
+                    }
+                }
+
+
+                // Check collision with boss (only player projectiles hit boss)
+                if (currentBossType > 0 && boss && boss.alive && !p.isBossProjectile && !p.isAlienProjectile) {
+                    if (!boss.isBossInvisible &&
+                        p.x - p.width / 2 < boss.x + boss.width / 2 &&
+                        p.x + p.width / 2 > boss.x - boss.width / 2 &&
+                        p.y - p.height / 2 < boss.y + boss.height / 2 &&
+                        p.y + p.height / 2 > boss.y - boss.height / 2) {
+                        
+                        p.alive = false;
+                        boss.health--;
+                        playSound(bossHitSound, false, 0.7);
+                        updateBossHealthBar();
+
+                        if (boss.health <= 0) {
+                            boss.currentPhase++;
+                            if (boss.currentPhase > boss.totalPhases) {
+                                boss.alive = false;
+                                defeatedBossesCount++;
+                                currentBossType = 0;
+
+                                if (defeatedBossesCount === 2) {
+                                    gameOver("You defeated the " + boss.name + "!", true);
+                                } else {
+                                    gameMessages.textContent = `The ${boss.name} was vanquished! Prepare for the next wave.`;
+                                    boss = null;
+                                    bossHealthBarContainer.style.display = 'none';
+                                    bossNameAndPhaseDisplay.style.display = 'none';
+                                    // Reset alien count for next wave, applying difficulty setting
+                                    currentAlienCount = initialAlienCount;
+                                    for (let i = 0; i < currentAlienCount; i++) {
+                                        aliens.push(createAlien());
+                                    }
+                                }
+                            } else {
+                                boss.health = Math.ceil(boss.baseHealth);
+                                boss.maxHealth = Math.ceil(boss.baseHealth);
+                                gameMessages.textContent = `${boss.name} enters Phase ${boss.currentPhase}!`;
+                                bossNameAndPhaseDisplay.textContent = `${boss.name} - Phase ${boss.currentPhase}/${boss.totalPhases}`;
+                                updateBossHealthBar();
+                                playSound(phaseChangeSound, false, 0.8);
+                            }
+                        }
+                    }
+                }
+            });
+
+            explosions.forEach(exp => {
+                exp.radius += (exp.maxRadius - exp.radius) * 0.1;
+                exp.life--;
+            });
+            explosions = explosions.filter(exp => exp.life > 0);
+
+
+            aliens = aliens.filter(alien => alien.alive);
+            projectiles = projectiles.filter(p => p.alive);
+
+
+            // Alien spawning logic
+            if (currentBossType === 0) {
+                if (lavaShotEnabled) {
+                    alienSpawnTimer++;
+                    if (alienSpawnTimer >= lavaPotionSpawnInterval) {
+                        aliens.push(createAlien());
+                        alienSpawnTimer = 0;
+                    }
+                } else if (aliens.length < currentAlienCount) {
+                    aliens.push(createAlien());
+                }
+            } else {
+                // If a boss is spawned, clear all normal aliens. Boss is the only target.
+                // UNLESS the boss is designed to spawn minions (Hard difficulty)
+                if (boss && !boss.spawnMinions) { // Only clear if boss doesn't spawn its own minions
+                    aliens = [];
+                }
+            }
+
+            aliens.forEach(alien => {
+                if (alien.y > gameCanvas.height) {
+                    gameOver("An alien reached the bottom!");
+                }
+            });
+        }
+
+        function drawGame() {
+            ctx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
+
+            // Draw player (square body)
+            ctx.fillStyle = invisiblePlayerEnabled ? 'rgba(0, 255, 0, 0.3)' : 'green';
+            ctx.fillRect(player.x - player.width / 2, player.y - player.height / 2, player.width, player.height);
+            // Draw player ASCII face (centered in the square body)
+            ctx.fillStyle = 'white';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.font = `${player.height * 0.7}px 'Courier New', monospace`;
+            ctx.fillText(player.asciiFace, player.x, player.y);
+
+
+            // Draw projectiles (square body)
+            projectiles.forEach(p => {
+                if (p.isBossProjectile && p.isInvisible && boss && boss.isBossInvisible) {
+                    ctx.globalAlpha = 0.15;
+                } else if (p.isBossProjectile && p.isInvisible) {
+                    ctx.globalAlpha = 0.3;
+                } else {
+                    ctx.globalAlpha = 1.0;
+                }
+                ctx.fillStyle = p.color || 'yellow';
+                ctx.fillRect(p.x - p.width / 2, p.y - p.height / 2, p.width, p.height);
+                // Draw projectile ASCII char (centered in the square body)
+                ctx.fillStyle = 'white';
+                ctx.font = `${p.height * 0.7}px 'Courier New', monospace`;
+                ctx.fillText(p.asciiChar || '*', p.x, p.y);
+                ctx.globalAlpha = 1.0;
+            });
+
+            // Draw aliens (square body)
+            aliens.forEach(alien => {
+                if (alien.alive) {
+                    ctx.fillStyle = alien.color || 'blue';
+                    ctx.fillRect(alien.x - alien.width / 2, alien.y - alien.height / 2, alien.width, alien.height);
+                    // Draw alien ASCII face (centered in the square body)
+                    ctx.fillStyle = 'white';
+                    ctx.font = `${alien.height * 0.7}px 'Courier New', monospace`;
+                    ctx.fillText(alien.asciiFace || 'X', alien.x, alien.y);
+                }
+            });
+
+            // Draw boss (square body)
+            if (currentBossType > 0 && boss && boss.alive) {
+                if (boss.isBossInvisible) {
+                    ctx.globalAlpha = 0.3;
+                }
+                ctx.fillStyle = boss.color;
+                ctx.fillRect(boss.x - boss.width / 2, boss.y - boss.height / 2, boss.width, boss.height);
+                // Draw boss ASCII face (centered in the square body)
+                ctx.fillStyle = 'white';
+                ctx.font = `${boss.height * 0.7}px 'Courier New', monospace`;
+                ctx.fillText(boss.asciiFace, boss.x, boss.y);
+                ctx.globalAlpha = 1.0;
+            }
+
+            // Draw explosions
+            explosions.forEach(exp => {
+                ctx.beginPath();
+                ctx.arc(exp.x, exp.y, exp.radius, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(${exp.color === 'red' ? '255, 0, 0' : '255, 165, 0'}, ${exp.life / 25})`;
+                ctx.fill();
+            });
+        }
+
+        // --- Event Handlers ---
+        function handleKeyDown(e) {
+            keys[e.key] = true;
+            if (e.key === ' ' && !e.repeat && gameRunning) {
+                fireProjectile();
+            }
+        }
+
+        function handleKeyUp(e) {
+            keys[e.key] = false;
+        }
+
+        function fireProjectile() {
+            playSound(playerShootSound, false, 0.4);
+            let pWidth = 5 * projectileSizeMultiplier;
+            let pHeight = 10 * projectileSizeMultiplier;
+
+            projectiles.push({
+                x: player.x,
+                y: player.y,
+                width: pWidth,
+                height: pHeight,
+                speed: 5,
+                alive: true,
+                isBossProjectile: false,
+                isAlienProjectile: false,
+                asciiChar: '^'
+            });
+        }
+
+        function updateBossHealthBar() {
+            if (boss) {
+                const healthPercentage = (boss.health / boss.maxHealth) * 100;
+                bossHealthBar.style.width = healthPercentage + '%';
+                bossNameAndPhaseDisplay.textContent = `${boss.name} - Phase ${boss.currentPhase}/${boss.totalPhases}`;
+            }
+        }
+
+        function drawPixelatedEnding(effect) {
+            ctx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
+
+            const pixelSize = 20;
+            let art = [];
+            let message = "YOU WIN!";
+            let messageColor = "gold";
+
+            switch (effect) {
+                case "speed":
+                    art = [
+                        "  G G  ",
+                        " GGGGG ",
+                        "G GGG G",
+                        "G G G G",
+                        " G G G ",
+                        "  G G  "
+                    ];
+                    message = "Victory! You outpaced them all!";
+                    messageColor = "cyan";
+                    break;
+                case "levitate":
+                    art = [
+                        "       ",
+                        "       ",
+                        " CCCCC ",
+                        "C C C C",
+                        " CCCCC ",
+                        "       "
+                    ];
+                    message = "Victory! You rose above!";
+                    messageColor = "lightblue";
+                    break;
+                case "slow-aliens":
+                    art = [
+                        "     ",
+                        " TTT ",
+                        "TTTTT",
+                        "T T T",
+                        "     "
+                    ];
+                    message = "Victory! You outlasted them!";
+                    messageColor = "lightgreen";
+                    break;
+                case "lava-shot":
+                    art = [
+                        "   ^   ",
+                        "  ^^^  ",
+                        " ^^^^^ ",
+                        " OOOOO ",
+                        "OOOOOOO"
+                    ];
+                    message = "Victory! Burned them all!";
+                    messageColor = "orange";
+                    break;
+                case "auto-aim":
+                    art = [
+                        " X   X ",
+                        "   O   ",
+                        " X   X "
+                    ];
+                    message = "Victory! Pinpoint accuracy!";
+                    messageColor = "purple";
+                    break;
+                case "lion-power":
+                    art = [
+                        " ^   ^ ",
+                        "   O   ",
+                        " \\---/ "
+                    ];
+                    message = "Victory! Roar of a Champion!";
+                    messageColor = "gold";
+                    break;
+                case "strong":
+                    art = [
+                        "   _   ",
+                        "  | |  ",
+                        " /_|_\\ ",
+                        "  \\ /  "
+                    ];
+                    message = "Victory! Unstoppable Force!";
+                    messageColor = "darkred";
+                    break;
+                case "mini-paka":
+                    art = [
+                        " _^_ ",
+                        "(o o)",
+                        " --- "
+                    ];
+                    message = "Victory! Tiny but Mighty!";
+                    messageColor = "pink";
+                    break;
+                case "zap-chain":
+                    art = [
+                        "  \\  ",
+                        "   \\ ",
+                        "    \\",
+                        "   / ",
+                        "  /  "
+                    ];
+                    message = "Victory! Electrifying performance!";
+                    messageColor = "yellow";
+                    break;
+                case "invisible":
+                    art = [
+                        "       ",
+                        "       ",
+                        "  . .  ",
+                        " .   . ",
+                        "  . .  ",
+                        "       "
+                    ];
+                    message = "Victory! Vanished into legend!";
+                    messageColor = "gray";
+                    break;
+                default:
+                    art = [
+                        " W W W ",
+                        " W W W ",
+                        "  W W  "
+                    ];
+                    message = "A mysterious victory!";
+                    messageColor = "white";
+                    break;
+            }
+
+            const artWidth = art[0].length * pixelSize;
+            const artHeight = art.length * pixelSize;
+            const startX = (gameCanvas.width - artWidth) / 2;
+            const startY = (gameCanvas.height - artHeight) / 2 - 50;
+
+            for (let r = 0; r < art.length; r++) {
+                for (let c = 0; c < art[r].length; c++) {
+                    const char = art[r][c];
+                    if (char !== ' ') {
+                        ctx.fillStyle = char === 'G' ? 'green' :
+                                        char === 'C' ? 'lightblue' :
+                                        char === 'T' ? 'brown' :
+                                        char === '^' ? 'red' :
+                                        char === 'O' ? 'darkred' :
+                                        char === 'X' ? 'white' :
+                                        char === '_' ? 'gold' :
+                                        char === '|' ? 'gray' :
+                                        char === '/' ? 'darkorange' :
+                                        char === '\\' ? 'darkorange' :
+                                        char === '(' || char === ')' ? 'purple' :
+                                        char === '.' ? 'lightgray' :
+                                        char === '~' ? 'cyan' :
+                                        'lime';
+                        ctx.fillRect(startX + c * pixelSize, startY + r * pixelSize, pixelSize, pixelSize);
+                    }
+                }
+            }
+
+            ctx.fillStyle = messageColor;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            ctx.font = "bold 24px 'Courier New', monospace";
+            ctx.fillText(message, gameCanvas.width / 2, startY + artHeight + 30);
+        }
+
+        function gameOver(message, isVictory = false) {
+            gameRunning = false;
+            if (gameFrameId) {
+                cancelAnimationFrame(gameFrameId);
+                gameFrameId = null;
+            }
+
+            if (isVictory) {
+                gameMessages.textContent = "";
+                drawPixelatedEnding(selectedPotion ? selectedPotion.effect : 'none');
+            } else {
+                playSound(playerHitSound, false, 0.9);
+                gameMessages.textContent = `GAME OVER! ${message}`;
+                gameMessages.style.color = 'red';
+                ctx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
+                ctx.fillStyle = 'black';
+                ctx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
+            }
+
+            document.removeEventListener('keydown', handleKeyDown);
+            document.removeEventListener('keyup', handleKeyUp);
+
+            player.speed = player.originalSpeed;
+
+            setTimeout(() => {
+                if (confirm(isVictory ? `You won! Play again?` : `Game Over! Play again?`)) {
+                    gameArea.style.opacity = 0;
+                    setTimeout(() => {
+                        gameArea.style.display = 'none';
+
+                        // Reset all game states for a fresh restart
+                        resetPotionEffects();
+                        selectedDifficulty = null; // Clear selected difficulty
+                        ALIENS_BEFORE_MINI_BOSS_1 = ALIENS_BEFORE_MINI_BOSS_1_BASE;
+                        ALIENS_BEFORE_MINI_BOSS_2 = ALIENS_BEFORE_MINI_BOSS_2_BASE;
+                        alienProjectileChance = 0;
+                        alienMinionSpawnChance = 0;
+
+                        shopContainer.style.display = 'block';
+                        shopContainer.classList.add('visible');
+
+                        usernameInput.value = '';
+                        elfDialogue.textContent = `Hello adventurer, what is your name?`;
+                        usernameInput.style.display = 'block';
+                        enterShopBtn.style.display = 'block';
+                        
+                        difficultySelection.style.display = 'none';
+                        selectedDifficultyMessage.textContent = '';
+                        chooseDifficultyBtn.disabled = true;
+                        document.querySelectorAll('.difficulty-item').forEach(item => {
+                            item.classList.remove('selected');
+                            item.style.pointerEvents = 'auto';
+                        });
+
+                        potionSelection.style.display = 'none';
+                        selectedPotionMessage.textContent = '';
+                        choosePotionBtn.disabled = true;
+                        
+                        document.querySelectorAll('.potion-item').forEach(item => {
+                            item.classList.remove('selected');
+                            item.style.pointerEvents = 'auto';
+                        });
+                        selectedPotion = null;
+                        counter = 500;
+                        inventoryNote.textContent = '';
+                        farewellMessage.textContent = '';
+                        
+                    }, 1000);
+                } else {
+                    gameMessages.textContent += "\nThanks for playing!";
+                }
+            }, 1500);
+        }
+
+        function gameLoop() {
+            if (gameRunning) {
+                updateGame();
+                drawGame();
+                gameFrameId = requestAnimationFrame(gameLoop);
+            }
+        }
+    </script>
+</html>
